@@ -1,81 +1,95 @@
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import ContactApp from './components/ContactApp';
 import Header from './components/Header';
-import axios from 'axios'
-import { useEffect,useState,useRef } from 'react';
-const debounce = (fn, delay) => {
-  let timeoutid;
-  return function (...args) {
-    if (timeoutid) {
-      clearTimeout(timeoutid)
-    }
+import axios from 'axios';
+import CircularProgress from '@mui/material/CircularProgress';
+import Alert from '@mui/material/Alert';
 
-    timeoutid = setTimeout(() => fn(...args), delay);
+const debounce = (fn, delay) => {
+  let timeoutId;
+  return function (...args) {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+    timeoutId = setTimeout(() => fn(...args), delay);
   };
 };
+
 function App() {
   const [search, setSearch] = useState('');
-  const [searchvalue,setSearchvalue]=useState('');
-  const searchRef = useRef();
   const [contacts, setContacts] = useState([]);
-    const [loading, setLoading] = useState(false);
-    const contactlist = async (val) => {
-        try {
-            setLoading(true);
-            const response = await axios('https://jsonplaceholder.typicode.com/users');
-            const data=response.data;
-            console.log(data);
-            console.log('++++++',val)
-            
-            if(val){
-              
-              console.log('......')
-               const arr=data.filter((element)=>{
-                return element.name.toLowerCase().includes(val);
-                
-            })
-                console.log(arr);
-                setContacts(arr);
-            }
-            else if(val?.length()===0){
-              console.log(data);
-              setContacts(response.data);
-            }
-            else{
-            setContacts(response.data);
-            }
-            setLoading(false);
-        }
-        catch (error) {
-            setLoading(true);
-            console.log(error);
-        }
+  const [notFound, setNotFound] = useState(false);
+  const [loading, setLoading] = useState(false);
+  
+  const fetchContacts = async () => {
+    try {
+      setLoading(true);
+      const response = await axios('https://jsonplaceholder.typicode.com/users');
+      setLoading(false);
+      setContacts(response.data);
+    } catch (error) {
+      setLoading(false);
+      console.log(error);
     }
-  //   useEffect(() => {
-      
-  //     contactlist();
-  // }, []);
-  const handleSearch = (val) => {
-    console.log('*****',val);
-    setSearchvalue(val);
-    contactlist(val); 
-  }
-  const debounced = useRef(debounce(handleSearch,500)).current;
+  };
 
   useEffect(() => {
-    contactlist();
-    console.log(search);
-    // searchRef.current.focus();
-    if (search)
-      debounced(search);
+    fetchContacts();
+  }, []);
 
-  }, [search])
+  const contactlist = useCallback(
+    async (val) => {
+      try {
+        setLoading(true);
+        const response = await axios('https://jsonplaceholder.typicode.com/users');
+        const data = response.data;
+        setLoading(false);
+        if (val) {
+          const filteredContacts = data.filter((element) =>
+            element.name.toLowerCase().includes(val.toLowerCase())
+          );
+          setContacts(filteredContacts);
+          setNotFound(filteredContacts.length === 0);
+        } else {
+          setContacts(data);
+          setNotFound(false);
+        }
+      } catch (error) {
+        setLoading(false);
+        console.log(error);
+      }
+    },
+    []
+  );
+  const handleSearch = (val) => {
+    contactlist(val); 
+  }
+  const debouncedSearch = useRef(debounce(handleSearch, 500)).current;
+
+  useEffect(() => {
+    if (search) {
+      debouncedSearch(search);
+    } else {
+      contactlist('');
+    }
+  }, [search,contactlist,debouncedSearch]);
+
   return (
-      <>
-      
-      
+    <>
       <Header search={search} setSearch={setSearch} />
-      <ContactApp contacts={contacts}/>
-      </>
+      {loading ? (
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+          <CircularProgress />
+        </div>
+      ) : (
+        <div>
+          {notFound ?
+           <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+            <Alert severity="info" sx={{maxWidth:'500px'}}>No contacts found.</Alert></div> 
+            : <ContactApp  contacts={contacts} />}
+        </div>
+      )}
+    </>
   );
 }
 

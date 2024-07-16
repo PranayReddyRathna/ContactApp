@@ -1,5 +1,5 @@
 import { Avatar, Grid, Typography } from '@mui/material'
-import React from 'react'
+import React, { useEffect } from 'react'
 import ListItem from '@mui/material/ListItem';
 import List from '@mui/material/List';
 import ListItemText from '@mui/material/ListItemText';
@@ -14,8 +14,10 @@ const ContactDetails = ({contact }) => {
 
   const { name, address, company, username, website, email, phone } = contact || {}
   const { street, city, zipcode } = address || {}
-  // const {catchPhrase,bs}=company || {}
+  useEffect(()=>{
 
+  },[contact])
+ 
   return (
     <div>
       <Typography variant='h1'>
